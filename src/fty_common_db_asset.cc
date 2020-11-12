@@ -936,7 +936,7 @@ unique_keytag (tntdb::Connection &conn,
 }
 
 int
-count_asset_keytag (tntdb::Connection &conn,
+has_asset_keytag_value (tntdb::Connection &conn,
                const std::string &keytag,
                const std::string &value,
                uint32_t       element_id)
@@ -961,7 +961,7 @@ count_asset_keytag (tntdb::Connection &conn,
         int r = 0;
         row[0].get(r);
         LOG_END;
-        return r;
+        return r > 0 ? 1 : 0;
     }
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);

@@ -178,13 +178,13 @@ namespace DBAssets {
                    const std::string &value,
                    uint32_t       element_id);
 
-// count_asset_keytag: how many times is gived a couple keytag/value
-// from an asset in t_bios_asset_ext_attributes
+// has_asset_keytag_value: check if a couple keytag/value exist
+// for an asset in t_bios_asset_ext_attributes
 // return -1 in case of error
 //         0 if there is no such pair in db yet
-//         otherwise number of such pairs
+//         1 if the pair exist in db
     int
-    count_asset_keytag (tntdb::Connection &conn,
+    has_asset_keytag_value (tntdb::Connection &conn,
                         const std::string &keytag,
                         const std::string &value,
                         uint32_t       element_id);
