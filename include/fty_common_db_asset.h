@@ -178,6 +178,17 @@ namespace DBAssets {
                    const std::string &value,
                    uint32_t       element_id);
 
+// count_asset_keytag: how many times is gived a couple keytag/value
+// from an asset in t_bios_asset_ext_attributes
+// return -1 in case of error
+//         0 if there is no such pair in db yet
+//         otherwise number of such pairs
+    int
+    count_asset_keytag (tntdb::Connection &conn,
+                        const std::string &keytag,
+                        const std::string &value,
+                        uint32_t       element_id);
+
 // max_number_of_power_links: select maximum number of power sources for device in the system
 // return -1 in case of error otherwise number of power sources
     int
@@ -317,7 +328,7 @@ namespace DBAssets {
 // list_devices_with_status: returns active/inactive devices
     std::vector <std::string>
     list_power_devices_with_status (tntdb::Connection &conn, const std::string & status);
-    
+
     std::vector <std::string>
     list_power_devices_with_status (const std::string & status);
 
