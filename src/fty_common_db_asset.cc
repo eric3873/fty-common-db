@@ -936,6 +936,40 @@ unique_keytag (tntdb::Connection &conn,
 }
 
 int
+has_asset_keytag_value (tntdb::Connection &conn,
+               const std::string &keytag,
+               const std::string &value,
+               uint32_t       element_id)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   COUNT(*) "
+            " FROM "
+            "   t_bios_asset_ext_attributes "
+            " WHERE id_asset_element = :element_id AND"
+            "       keytag = :keytag AND"
+            "       value = :value"
+        );
+
+        tntdb::Row row = st.set("element_id", element_id)
+                           .set("keytag", keytag)
+                           .set("value", value)
+                           .selectRow();
+        int r = 0;
+        row[0].get(r);
+        LOG_END;
+        return r > 0 ? 1 : 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
 max_number_of_power_links (tntdb::Connection& conn)
 {
     LOG_START;
