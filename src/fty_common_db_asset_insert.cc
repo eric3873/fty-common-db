@@ -26,6 +26,7 @@
 @end
 */
 
+#include <time.h>
 #include <tntdb/row.h>
 #include <tntdb/result.h>
 #include <tntdb/error.h>
@@ -709,12 +710,22 @@ insert_into_asset_element (tntdb::Connection &conn,
                 " ON DUPLICATE KEY UPDATE name = :name "
             );
         } else {
-            // @ is prohibited in name => name-@@-342 is unique
+            timeval t;
+            gettimeofday(&t, NULL);
+            srand(t.tv_sec * t.tv_usec);
+            
+            // generate 8 digit random integer
+            unsigned long index = rand() % 100000000;
+            std::string indexStr = std::to_string(index);
+
+            // create 8 digit index with leading zeros
+            indexStr = std::string(8 - indexStr.length(), '0') + indexStr;
+
             statement = conn.prepareCached (
                 " INSERT INTO t_bios_asset_element "
                 " (name, id_type, id_subtype, id_parent, status, priority, asset_tag) "
                 " VALUES "
-                " (concat (:name, '-@@-', " + std::to_string (rand ())  + "), :id_type, :id_subtype, :id_parent, :status, :priority, :asset_tag) "
+                " (concat (:name, '-', \"" + indexStr + "\"), :id_type, :id_subtype, :id_parent, :status, :priority, :asset_tag) "
             );
         }
         if (parent_id == 0)
@@ -744,17 +755,7 @@ insert_into_asset_element (tntdb::Connection &conn,
 
         ret.rowid = conn.lastInsertId ();
         log_debug ("[t_bios_asset_element]: was inserted %" PRIu64 " rows", ret.affected_rows);
-        if (! update) {
-            // it is insert, fix the name
-            statement = conn.prepareCached (
-                " UPDATE t_bios_asset_element "
-                "  set name = concat(:name, '-', :id) "
-                " WHERE id_asset_element = :id "
-            );
-            statement.set ("name", element_name).
-                set ("id", ret.rowid).
-                execute();
-        }
+
         if (ret.affected_rows == 0) {
             ret.status = 0;
             ret.errtype    = DB_ERR;
