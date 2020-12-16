@@ -38,6 +38,8 @@
 #include <fty_common_db_defs.h>
 #include "fty_common_db_classes.h"
 
+#define MAX_CREATE_RETRY 10
+
 namespace DBAssetsInsert {
 
 static const std::string  ins_upd_ass_ext_att_QUERY =
@@ -711,15 +713,43 @@ insert_into_asset_element (tntdb::Connection &conn,
             );
         } else {
             timeval t;
-            gettimeofday(&t, NULL);
-            srand(t.tv_sec * t.tv_usec);
-            
-            // generate 8 digit random integer
-            unsigned long index = rand() % 100000000;
-            std::string indexStr = std::to_string(index);
 
-            // create 8 digit index with leading zeros
-            indexStr = std::string(8 - indexStr.length(), '0') + indexStr;
+            bool valid = false;
+            std::string indexStr;
+
+            unsigned retry = 0;
+
+            while(!valid && (retry++ < MAX_CREATE_RETRY)) {
+                gettimeofday(&t, NULL);
+                srand(static_cast<unsigned int>(t.tv_sec * t.tv_usec));
+                // generate 8 digit random integer
+                unsigned long index = static_cast<unsigned long>(rand()) % static_cast<unsigned long>(100000000);
+
+                indexStr = std::to_string(index);
+                // create 8 digit index with leading zeros
+                indexStr = std::string(8 - indexStr.length(), '0') + indexStr;
+
+                log_debug("Checking ID %s validity", indexStr.c_str());
+
+                auto q = conn.prepare(R"(
+                    SELECT COUNT(id_asset_element) as cnt
+                    FROM t_bios_asset_element
+                    WHERE name like :name
+                )");
+
+                q.set("name", "%" + indexStr);
+
+                try {
+                    int res = q.selectValue().getInt();
+                    valid = (res == 0);
+                } catch (const std::exception& e) {
+                    throw std::runtime_error(e.what());
+                }
+            }
+
+            if(!valid) {
+                throw std::runtime_error("Multiple Asset ID collisions - impossible to create asset");
+            }
 
             statement = conn.prepareCached (
                 " INSERT INTO t_bios_asset_element "
