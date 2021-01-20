@@ -59,10 +59,29 @@ id_to_name_ext_name (uint32_t asset_id)
     }
     catch (const std::exception &e)
     {
-        if (asset_id != 0)
-            log_error ("exception caught %s - %" PRIu32, e.what (), asset_id);
-        name = "";
-        ext_name = "";
+        log_warning ("exception caught %s - %" PRIu32 ", falling back to iname only", e.what (), asset_id);
+        try
+        {
+            tntdb::Connection conn = tntdb::connectCached(DBConn::url);
+            tntdb::Statement st = conn.prepareCached(
+                " SELECT asset.name "
+                " FROM "
+                "   t_bios_asset_element AS asset "
+                " WHERE "
+                "   asset.id_asset_element = :asset_id ");
+
+            tntdb::Row row = st.set("asset_id", asset_id).selectRow();
+            log_debug("[t_bios_asset_element]: were selected %" PRIu32 " rows", 1);
+
+            row [0].get (name);
+        }
+        catch (const std::exception &e)
+        {
+            if (asset_id != 0)
+                log_error ("exception caught %s - %" PRIu32, e.what (), asset_id);
+            name = "";
+            ext_name = "";
+        }
     }
     return make_pair (name, ext_name);
 }
