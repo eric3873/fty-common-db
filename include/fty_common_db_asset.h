@@ -325,6 +325,9 @@ namespace DBAssets {
     std::vector <std::string>
     list_devices_with_status (tntdb::Connection &conn, std::string status);
 
+    std::vector <std::string>
+    list_devices_with_status (const std::string& status);
+
 // list_devices_with_status: returns active/inactive devices
     std::vector <std::string>
     list_power_devices_with_status (tntdb::Connection &conn, const std::string & status);
