@@ -58,6 +58,12 @@ namespace DBAssets {
     int
     extname_to_asset_name (std::string asset_ext_name, std::string &asset_name);
 
+// internal name to type
+    uint16_t name_to_type(const std::string& iname);
+
+// internal name to subtype
+    uint16_t name_to_subtype(const std::string& iname);
+
 // --------------------------------------------------------------------
 
 // select_asset_element_super_parent: selects parents of given device
@@ -347,6 +353,15 @@ namespace DBAssets {
 // get_status_from_db: read status (active/nonactive) of given element
     std::string
     get_status_from_db (tntdb::Connection conn,
+                        const std::string &element_name);
+
+// get linked devices (where current asset is either source or destination)
+// (without existing DB connection)
+    std::set<std::string>
+    get_linked_devices_helper (const std::string &element_name);
+// get linked devices (where current asset is either source or destination)
+    std::set<std::string>
+    get_linked_devices (tntdb::Connection conn,
                         const std::string &element_name);
 
 // select_daisy_chain: get daisy-chain of which asset_id is part based on

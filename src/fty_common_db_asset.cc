@@ -244,6 +244,70 @@ extname_to_asset_name (std::string asset_ext_name, std::string &asset_name)
     }
 }
 
+uint16_t name_to_type(const std::string& iname)
+{
+    if(iname.empty()) return 0;
+
+    try
+    {
+        uint16_t type = 0;
+
+        tntdb::Connection conn = tntdb::connectCached(DBConn::url);
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT id_type"
+                " FROM"
+                "   t_bios_asset_element"
+                " WHERE name = :iname"
+                );
+
+        tntdb::Row row = st.set("iname", iname).selectRow();
+
+        row [0].get(type);
+        return type;
+    }
+    catch (const tntdb::NotFound &e) {
+        log_error ("element %s not found", iname.c_str ());
+        return 0;
+    }
+    catch (const std::exception &e)
+    {
+        log_error ("exception caught %s for element %s", e.what (), iname.c_str ());
+        return 0;
+    }
+}
+
+uint16_t name_to_subtype(const std::string& iname)
+{
+    if(iname.empty()) return 0;
+
+    try
+    {
+        uint16_t type = 0;
+
+        tntdb::Connection conn = tntdb::connectCached(DBConn::url);
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT id_subtype"
+                " FROM"
+                "   t_bios_asset_element"
+                " WHERE name = :iname"
+                );
+
+        tntdb::Row row = st.set("iname", iname).selectRow();
+
+        row [0].get(type);
+        return type;
+    }
+    catch (const tntdb::NotFound &e) {
+        log_error ("element %s not found", iname.c_str ());
+        return 0;
+    }
+    catch (const std::exception &e)
+    {
+        log_error ("exception caught %s for element %s", e.what (), iname.c_str ());
+        return 0;
+    }
+}
+
 // --------------------------------------------------------------------------
 
 int
@@ -2012,6 +2076,48 @@ get_status_from_db (tntdb::Connection conn,
     catch (const std::exception &e) {
         log_error ("get_status_from_db: [v_bios_asset_element]: error '%s'", e.what());
         return "unknown";
+    }
+}
+
+std::set<std::string>
+get_linked_devices_helper (const std::string &element_name)
+{
+    tntdb::Connection conn = tntdb::connectCached(DBConn::url);
+    auto ret = get_linked_devices (conn, element_name);
+    return ret;
+}
+
+std::set<std::string>
+get_linked_devices (tntdb::Connection conn,
+                    const std::string &element_name)
+{
+    std::set<std::string> links;
+    try {
+        log_debug("get_linked_devices: getting linked devices for asset %s", element_name.c_str());
+        auto deviceID = name_to_asset_id(element_name);
+
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT e.name "
+            " FROM t_bios_asset_element as e"
+            " WHERE"
+            " e.id_asset_element = (select id_asset_device_dest from t_bios_asset_link where id_asset_device_src = :id) OR"
+            " e.id_asset_element = (select id_asset_device_src from t_bios_asset_link where id_asset_device_dest = :id);"
+            );
+
+        tntdb::Result result = st.set("id", deviceID).select();
+        log_trace("[t_bios_asset_element]: were selected %" PRIu32 " rows", result.size());
+        for (const auto &row: result )
+        {
+            std::string linkName;
+            row[0].getString(linkName);
+
+            links.insert(linkName);
+        } // end for
+        return links;
+    }
+    catch (const std::exception &e) {
+        log_error ("get_linked_devices: unable to select links: error '%s'", e.what());
+        return links;
     }
 }
 
