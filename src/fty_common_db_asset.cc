@@ -2100,8 +2100,8 @@ get_linked_devices (tntdb::Connection conn,
             " SELECT e.name "
             " FROM t_bios_asset_element as e"
             " WHERE"
-            " e.id_asset_element = (select id_asset_device_dest from t_bios_asset_link where id_asset_device_src = :id) OR"
-            " e.id_asset_element = (select id_asset_device_src from t_bios_asset_link where id_asset_device_dest = :id);"
+            " e.id_asset_element IN (select id_asset_device_dest from t_bios_asset_link where id_asset_device_src = :id) OR"
+            " e.id_asset_element IN (select id_asset_device_src from t_bios_asset_link where id_asset_device_dest = :id);"
             );
 
         tntdb::Result result = st.set("id", deviceID).select();
