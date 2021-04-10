@@ -22,71 +22,51 @@
 #ifndef FTY_COMMON_DB_ASSET_DELETE_H_INCLUDED
 #define FTY_COMMON_DB_ASSET_DELETE_H_INCLUDED
 
+#include "fty_common_db_defs.h"
 #include <tntdb/connect.h>
 
 namespace DBAssetsDelete {
 
 // delete_asset_link: delete src<->dst link
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_asset_link (tntdb::Connection &conn,
-                       uint32_t asset_element_id_src,
-                       uint32_t asset_element_id_dest);
+db_reply_t delete_asset_link(tntdb::Connection& conn, uint32_t asset_element_id_src, uint32_t asset_element_id_dest);
 
 // delete_asset_links_to: delete all links which have given asset as 'dest'
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_asset_links_to (tntdb::Connection &conn,
-                           uint32_t asset_device_id);
+db_reply_t delete_asset_links_to(tntdb::Connection& conn, uint32_t asset_device_id);
 
 ///////////////////////////////////////////////////////////////////////////
 // delete_asset_group_links: delete all data about a group
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_asset_group_links (tntdb::Connection &conn,
-                              uint32_t asset_group_id);
+db_reply_t delete_asset_group_links(tntdb::Connection& conn, uint32_t asset_group_id);
 
 ////////////////////////////////////////////////////////////////////////////
 // delete_asset_ext_attribute: delete given ext attribute of a given asset
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_asset_ext_attribute (tntdb::Connection &conn,
-                                const char *keytag,
-                                uint32_t asset_element_id);
+db_reply_t delete_asset_ext_attribute(tntdb::Connection& conn, const char* keytag, uint32_t asset_element_id);
 
 // delete_asset_ext_attributes_with_ro: delete all ext attributes of given asset with given 'read_only' status
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_asset_ext_attributes_with_ro (tntdb::Connection &conn,
-                                         uint32_t asset_element_id,
-                                         bool read_only);
+db_reply_t delete_asset_ext_attributes_with_ro(tntdb::Connection& conn, uint32_t asset_element_id, bool read_only);
 
 ////////////////////////////////////////////////////////////////////////////
 // delete_asset_element: delete asset from t_bios_asset_element
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_asset_element (tntdb::Connection &conn,
-                          uint32_t asset_element_id);
+db_reply_t delete_asset_element(tntdb::Connection& conn, uint32_t asset_element_id);
 
 /////////////////////////////////////////////////////////////////////////////
 // delete_asset_element_from_asset_groups: delete asset from all group
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_asset_element_from_asset_groups (tntdb::Connection &conn,
-                                            uint32_t asset_element_id);
+db_reply_t delete_asset_element_from_asset_groups(tntdb::Connection& conn, uint32_t asset_element_id);
 
 // delete_asset_element_from_asset_groups: delete asset from specified group
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_asset_element_from_asset_group (tntdb::Connection &conn,
-                                           uint32_t asset_group_id,
-                                           uint32_t asset_element_id);
+db_reply_t delete_asset_element_from_asset_group(
+    tntdb::Connection& conn, uint32_t asset_group_id, uint32_t asset_element_id);
 
 ///////////////////////////////////////////////////////////////////////////
 // delete_monitor_asset_relation_by_a: delete given asset from t_bios_monitor_asset_relation
 // returns error if input params are unacceptable or error happened during delete
-    db_reply_t
-    delete_monitor_asset_relation_by_a (tntdb::Connection &conn,
-                                        uint32_t id);
-} // end namespace
+db_reply_t delete_monitor_asset_relation_by_a(tntdb::Connection& conn, uint32_t id);
+} // namespace DBAssetsDelete
 #endif

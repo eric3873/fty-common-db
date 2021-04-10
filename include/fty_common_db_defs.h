@@ -22,59 +22,63 @@
 #ifndef FTY_COMMON_DB_DEFS_H_INCLUDED
 #define FTY_COMMON_DB_DEFS_H_INCLUDED
 
+#include <czmq.h>
 #include <functional>
 #include <inttypes.h>
 #include <tntdb.h>
-#include <czmq.h>
 
 #ifdef __cplusplus
-#define INPUT_POWER_CHAIN     1
+#define INPUT_POWER_CHAIN 1
 
-typedef std::function<void(const tntdb::Row&)> row_cb_f ;
+typedef std::function<void(const tntdb::Row&)> row_cb_f;
 
 template <typename T>
-struct db_reply{
-    int status; // ok/fail
-    int errtype;
-    int errsubtype;
-    uint64_t rowid;  // insert/update or http error code if status == 0
-    uint64_t affected_rows; // for update/insert/delete
+struct db_reply
+{
+    int         status; // ok/fail
+    int         errtype;
+    int         errsubtype;
+    uint64_t    rowid;         // insert/update or http error code if status == 0
+    uint64_t    affected_rows; // for update/insert/delete
     std::string msg;
-    zhash_t *addinfo;
-    T item;
+    zhash_t*    addinfo;
+    T           item;
 };
 
 typedef db_reply<uint64_t> db_reply_t;
 
-inline db_reply_t db_reply_new() {
+inline db_reply_t db_reply_new()
+{
     db_reply_t val;
-    val.status = 1;
-    val.errtype = 0;
-    val.errsubtype = 0;
-    val.rowid = 0;
+    val.status        = 1;
+    val.errtype       = 0;
+    val.errsubtype    = 0;
+    val.rowid         = 0;
     val.affected_rows = 0;
-    val.msg = "";
-    val.addinfo = NULL;
-    val.item = 0;
+    val.msg           = "";
+    val.addinfo       = nullptr;
+    val.item          = 0;
 
     return val;
 }
 
 template <typename T>
-inline db_reply<T> db_reply_new(T& item) {
+inline db_reply<T> db_reply_new(T& item)
+{
     db_reply<T> val;
-    val.status = 1;
-    val.errtype = 0;
-    val.errsubtype = 0;
-    val.rowid = 0;
+    val.status        = 1;
+    val.errtype       = 0;
+    val.errsubtype    = 0;
+    val.rowid         = 0;
     val.affected_rows = 0;
-    val.msg = "";
-    val.addinfo = NULL;
-    val.item = item;
+    val.msg           = "";
+    val.addinfo       = nullptr;
+    val.item          = item;
     return val;
 }
 
-struct db_web_basic_element_t {
+struct db_web_basic_element_t
+{
     uint32_t    id;
     std::string name;
     std::string status;
@@ -92,86 +96,85 @@ struct db_web_basic_element_t {
 
 typedef struct _asset_link
 {
-    uint32_t    src;     //!< id of src element
-    uint32_t    dest;    //!< id of dest element
-    char        *src_out; //!< outlet in src
-    char        *dest_in; //!< inlet in dest
-    uint16_t    type;    //!< link type id
+    uint32_t src;     //!< id of src element
+    uint32_t dest;    //!< id of dest element
+    char*    src_out; //!< outlet in src
+    char*    dest_in; //!< inlet in dest
+    uint16_t type;    //!< link type id
 } link_t;
 
 typedef struct _new_asset_link
 {
-    std::string    src;     //!< id of src element
-    std::string    dest;    //!< id of dest element
-    char        *src_out; //!< outlet in src
-    char        *dest_in; //!< inlet in dest
+    std::string src;     //!< id of src element
+    std::string dest;    //!< id of dest element
+    char*       src_out; //!< outlet in src
+    char*       dest_in; //!< inlet in dest
     uint16_t    type;    //!< link type id
 } new_link_t;
 
-struct db_tmp_link_t {
-    uint32_t         src_id;
-    uint32_t         dest_id;
-    std::string      src_name;
-    std::string      src_socket;
-    std::string      dest_socket;
+struct db_tmp_link_t
+{
+    uint32_t    src_id;
+    uint32_t    dest_id;
+    std::string src_name;
+    std::string src_socket;
+    std::string dest_socket;
 };
 
-struct db_web_element_t{
-    db_web_basic_element_t basic;
-    std::map <uint32_t, std::string> groups;
-    std::vector <db_tmp_link_t> powers;
-    std::map <std::string, std::pair<std::string, bool> > ext;
-    std::vector <std::tuple <uint32_t, std::string, std::string, std::string>> parents;        // list of parents (id, name)
+struct db_web_element_t
+{
+    db_web_basic_element_t                                                   basic;
+    std::map<uint32_t, std::string>                                          groups;
+    std::vector<db_tmp_link_t>                                               powers;
+    std::map<std::string, std::pair<std::string, bool>>                      ext;
+    std::vector<std::tuple<uint32_t, std::string, std::string, std::string>> parents; // list of parents (id, name)
 };
 
-struct db_a_elmnt_t {
-    uint32_t         id;
-    std::string      name;
-    std::string      status;
-    uint32_t         parent_id;
-    uint16_t         priority;
-    uint16_t         type_id;
-    uint16_t         subtype_id;
-    std::string      asset_tag;
-    std::map <std::string, std::string> ext;
+struct db_a_elmnt_t
+{
+    uint32_t                           id;
+    std::string                        name;
+    std::string                        status;
+    uint32_t                           parent_id;
+    uint16_t                           priority;
+    uint16_t                           type_id;
+    uint16_t                           subtype_id;
+    std::string                        asset_tag;
+    std::map<std::string, std::string> ext;
 
-    db_a_elmnt_t () :
-        id{},
-        name{},
-        status{},
-        parent_id{},
-        priority{},
-        type_id{},
-        subtype_id{},
-        asset_tag{},
-        ext{}
-    {}
+    db_a_elmnt_t()
+        : id{}
+        , name{}
+        , status{}
+        , parent_id{}
+        , priority{}
+        , type_id{}
+        , subtype_id{}
+        , asset_tag{}
+        , ext{}
+    {
+    }
 
-    db_a_elmnt_t (
-        uint32_t               id,
-        const std::string      &name,
-        const std::string      &status,
-        uint32_t               parent_id,
-        uint8_t                priority,
-        uint16_t               type_id,
-        uint16_t               subtype_id,
-        const std::string      &asset_tag) :
-
-        id(id),
-        name(name),
-        status(status),
-        parent_id(parent_id),
-        priority(priority),
-        type_id(type_id),
-        subtype_id(subtype_id),
-        asset_tag(asset_tag),
-        ext{}
-    {}
+    db_a_elmnt_t(uint32_t _id, const std::string& _name, const std::string& _status, uint32_t _parent_id,
+        uint8_t _priority, uint16_t _type_id, uint16_t _subtype_id, const std::string& _asset_tag)
+        :
+        id(_id)
+        , name(_name)
+        , status(_status)
+        , parent_id(_parent_id)
+        , priority(_priority)
+        , type_id(_type_id)
+        , subtype_id(_subtype_id)
+        , asset_tag(_asset_tag)
+        , ext{}
+    {
+    }
 };
 
 // FIXME: mapping is taken from fty-common-rest and should be extracted into a common library
 //! Possible error types
-enum errtypes {
+enum errtypes
+{
     //! First error should be UNKNOWN as it maps to zero and zero is weird
     UNKNOWN_ERR,
     DB_ERR,
@@ -183,7 +186,8 @@ enum errtypes {
 };
 
 //! Constants for database errors
-enum db_err_nos {
+enum db_err_nos
+{
     //! First error should be UNKNOWN as it maps to zero and zero is weird
     DB_ERROR_UNKNOWN,
     DB_ERROR_INTERNAL,
@@ -198,7 +202,8 @@ enum db_err_nos {
 };
 
 //! Constants for bad input type of error
-enum bad_input_err {
+enum bad_input_err
+{
     //! First error should be UNKNOWN as it maps to zero and zero is weird
     BAD_INPUT_UNKNOWN,
     BAD_INPUT_WRONG_INPUT,
@@ -206,7 +211,8 @@ enum bad_input_err {
 };
 
 //! Constants for internal errors
-enum internal_err {
+enum internal_err
+{
     //! First error should be UNKNOWN as it maps to zero and zero is weird
     INTERNAL_UNKNOWN,
     INTERNAL_NOT_IMPLEMENTED

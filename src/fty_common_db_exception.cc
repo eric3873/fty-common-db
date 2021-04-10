@@ -26,82 +26,80 @@
 @end
 */
 
-#include "fty_common_db_classes.h"
-
-#include <sstream>
+#include "fty_common_db_exception.h"
 #include <cxxtools/jsondeserializer.h>
 #include <cxxtools/jsonserializer.h>
+#include <sstream>
 
-namespace fty
+namespace fty {
+// Public
+void CommonException::throwCommonException (const std::string& data)
 {
-    // Public
-    void CommonException::throwCommonException(const std::string & data)
-    {
-        // get the serializationInfo
-        std::stringstream input;
-        input << data;
+    // get the serializationInfo
+    std::stringstream input;
+    input << data;
 
-        cxxtools::SerializationInfo si;
-        cxxtools::JsonDeserializer deserializer(input);
-        deserializer.deserialize(si);
+    cxxtools::SerializationInfo si;
+    cxxtools::JsonDeserializer  deserializer(input);
+    deserializer.deserialize(si);
 
-        // extract the error code, the message and the extra data
-        int status = 0;
-        uint8_t errorType = 0;
-        uint8_t errorSubtype = 0;
-        std::string whatArg;
-        cxxtools::SerializationInfo extraData;
+    // extract the error code, the message and the extra data
+    int                         status       = 0;
+    uint8_t                     errorType    = 0;
+    uint8_t                     errorSubtype = 0;
+    std::string                 whatArg;
+    cxxtools::SerializationInfo extraData;
 
-        try
-        {
-            si.getMember("status") >>= status;
-            si.getMember("errorType") >>= errorType;
-            si.getMember("errorSubtype") >>= errorSubtype;
-            si.getMember("whatArg") >>= whatArg;
-            extraData = si.getMember("extraData");
-        }
-        catch(...)
-        {}
-
-        throw CommonException(status, static_cast<ErrorType>(errorType), static_cast<ErrorSubtype>(errorSubtype), whatArg);
+    try {
+        si.getMember("status") >>= status;
+        si.getMember("errorType") >>= errorType;
+        si.getMember("errorSubtype") >>= errorSubtype;
+        si.getMember("whatArg") >>= whatArg;
+        extraData = si.getMember("extraData");
+    } catch (...) {
     }
 
-    CommonException::CommonException(int status, ErrorType errorType, ErrorSubtype errorSubtype, const std::string & whatArg) :
-        m_status(status),
-        m_errorType(errorType),
-        m_errorSubtype(errorSubtype),
-        m_whatArg(whatArg)
-    {}
+    throw CommonException(status, static_cast<ErrorType>(errorType), static_cast<ErrorSubtype>(errorSubtype), whatArg);
+}
 
-    const char* CommonException::what() const noexcept
-    {
-        return m_whatArg.c_str();
-    }
+CommonException::CommonException(int status, ErrorType errorType, ErrorSubtype errorSubtype, const std::string& whatArg)
+    : m_status(status)
+    , m_errorType(errorType)
+    , m_errorSubtype(errorSubtype)
+    , m_whatArg(whatArg)
+{
+}
 
-    std::string CommonException::toJson() const
-    {
-        std::stringstream output;
-        cxxtools::JsonSerializer serializer(output);
-        serializer.beautify(true);
+const char* CommonException::what() const noexcept
+{
+    return m_whatArg.c_str();
+}
 
-        cxxtools::SerializationInfo si;
-        si <<= *(this);
-        serializer.serialize(si);
+std::string CommonException::toJson() const
+{
+    std::stringstream        output;
+    cxxtools::JsonSerializer serializer(output);
+    serializer.beautify(true);
 
-        return output.str();
-    }
+    cxxtools::SerializationInfo si;
+    si <<= *(this);
+    serializer.serialize(si);
 
-    void operator<<= (cxxtools::SerializationInfo& si, const CommonException & exception)
-    {
-        si.addMember("status") <<= exception.m_status;
-        si.addMember("errorType") <<= uint8_t(exception.m_errorType);
-        si.addMember("errorSubtype") <<= uint8_t(exception.m_errorSubtype);
-        si.addMember("whatArg") <<= exception.m_whatArg;
-        exception.fillSerializationInfo(si.addMember("extraData"));
-    }
+    return output.str();
+}
 
-    // Protected
-    void CommonException::fillSerializationInfo(cxxtools::SerializationInfo& /*si*/) const
-    {}
+void operator<<=(cxxtools::SerializationInfo& si, const CommonException& exception)
+{
+    si.addMember("status") <<= exception.m_status;
+    si.addMember("errorType") <<= uint8_t(exception.m_errorType);
+    si.addMember("errorSubtype") <<= uint8_t(exception.m_errorSubtype);
+    si.addMember("whatArg") <<= exception.m_whatArg;
+    exception.fillSerializationInfo(si.addMember("extraData"));
+}
 
-} // end namespace
+// Protected
+void CommonException::fillSerializationInfo(cxxtools::SerializationInfo& /*si*/) const
+{
+}
+
+} // namespace fty

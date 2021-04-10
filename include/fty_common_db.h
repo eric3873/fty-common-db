@@ -19,12 +19,28 @@
     =========================================================================
 */
 
-#ifndef FTY_COMMON_DB_H_H_INCLUDED
-#define FTY_COMMON_DB_H_H_INCLUDED
+#pragma once
 
-//  Include the project library file
-#include "fty_common_db_library.h"
+typedef struct _fty_common_db_dbpath_t fty_common_db_dbpath_t;
+#define FTY_COMMON_DB_DBPATH_T_DEFINED
+typedef struct _fty_common_db_exception_t fty_common_db_exception_t;
+#define FTY_COMMON_DB_EXCEPTION_T_DEFINED
+typedef struct _fty_common_db_asset_t fty_common_db_asset_t;
+#define FTY_COMMON_DB_ASSET_T_DEFINED
+typedef struct _fty_common_db_asset_delete_t fty_common_db_asset_delete_t;
+#define FTY_COMMON_DB_ASSET_DELETE_T_DEFINED
+typedef struct _fty_common_db_asset_insert_t fty_common_db_asset_insert_t;
+#define FTY_COMMON_DB_ASSET_INSERT_T_DEFINED
+typedef struct _fty_common_db_asset_update_t fty_common_db_asset_update_t;
+#define FTY_COMMON_DB_ASSET_UPDATE_T_DEFINED
+typedef struct _fty_common_db_uptime_t fty_common_db_uptime_t;
+#define FTY_COMMON_DB_UPTIME_T_DEFINED
 
-//  Add your own public definitions here, if you need them
-
-#endif
+#include "fty_common_db_asset.h"
+#include "fty_common_db_asset_delete.h"
+#include "fty_common_db_asset_insert.h"
+#include "fty_common_db_asset_update.h"
+#include "fty_common_db_dbpath.h"
+#include "fty_common_db_defs.h"
+#include "fty_common_db_exception.h"
+#include "fty_common_db_uptime.h"
