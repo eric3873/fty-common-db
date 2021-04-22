@@ -42,13 +42,14 @@ etn_target(shared ${PROJECT_NAME}
 
 ########################################################################################################################
 
-#etn_test_target(${PROJECT_NAME}
-#    SOURCES
-#    USES
-#        pthread
-#    SUBDIR
-#        test
-#)
+etn_test_target(${PROJECT_NAME}
+    SOURCES
+        test/main.cpp
+    USES
+        pthread
+    SUBDIR
+        test
+)
 
 ########################################################################################################################
 
