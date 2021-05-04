@@ -30,20 +30,11 @@ namespace DBAssetsUpdate {
 // name would not be updated, but to provide a functionality for future
 // parameter was added
 
-    int
-    update_asset_element (tntdb::Connection &conn,
-                          uint32_t element_id,
-                          const char *element_name,
-                          uint32_t parent_id,
-                          const char *status,
-                          uint16_t priority,
-                          const char *asset_tag,
-                          int32_t &affected_rows);
+int update_asset_element(tntdb::Connection& conn, uint32_t element_id, const char* element_name, uint32_t parent_id,
+    const char* status, uint16_t priority, const char* asset_tag, int32_t& affected_rows);
 
 // update_asset_status_by_name: updates asset status
-    int
-    update_asset_status_by_name (const char *element_name,
-                                const char *status);
+int update_asset_status_by_name(const char* element_name, const char* status);
 
-} // end namespace
+} // namespace DBAssetsUpdate
 #endif

@@ -26,62 +26,56 @@
 @end
 */
 
-#include <fty_common_db_uptime.h>
+#include "fty_common_db_uptime.h"
+#include <vector>
+#include <functional>
+#include <tntdb.h>
+#include "fty_common_db_asset.h"
+#include "fty_common_db_dbpath.h"
+#include "fty_common_asset_types.h"
 
 namespace DBUptime {
-bool
-get_dc_upses (const char *asset_name, zhash_t *hash)
+bool get_dc_upses(const char* asset_name, zhash_t* hash)
 {
-    std::vector <std::string> list_ups{};
-    std::function<void(const tntdb::Row&)> cb =     \
-        [&list_ups](const tntdb::Row& row)
-        {
-            uint32_t type_id = 0;
-            row["type_id"].get(type_id);
+    std::vector<std::string>               list_ups{};
+    std::function<void(const tntdb::Row&)> cb = [&list_ups](const tntdb::Row& row) {
+        uint32_t type_id = 0;
+        row["type_id"].get(type_id);
 
-            uint32_t device_type_name = 0;
-            row["subtype_id"].get(device_type_name);
+        uint32_t device_type_name = 0;
+        row["subtype_id"].get(device_type_name);
 
-            std::string device_name = "";
-            row["name"].get(device_name);
-            list_ups.push_back (device_name);
+        std::string device_name = "";
+        row["name"].get(device_name);
+        list_ups.push_back(device_name);
+    };
 
-        };
-
-    int64_t dc_id = DBAssets::name_to_asset_id (asset_name);
+    int64_t dc_id = DBAssets::name_to_asset_id(asset_name);
     if (dc_id < 0) {
         return false;
     }
-    tntdb::Connection conn = tntdb::connectCached (DBConn::url);
+    tntdb::Connection conn = tntdb::connectCached(DBConn::url);
 
-    int rv = DBAssets::select_assets_by_container (conn,
-                                         dc_id,
-                                         {persist::asset_type::DEVICE},
-                                         {persist::asset_subtype::UPS},
-                                         "",
-                                         "active",
-                                         cb);
+    int rv = DBAssets::select_assets_by_container(
+        conn, uint32_t(dc_id), {persist::asset_type::DEVICE}, {persist::asset_subtype::UPS}, "", "active", cb);
 
     if (rv != 0) {
-        conn.close ();
+        conn.close();
         return false;
     }
 
     int i = 0;
     for (auto& ups : list_ups) {
         char key[14];
-        sprintf (key,"ups%d", i);
-        char *ups_name = strdup (ups.c_str ());
-        zhash_insert (hash, key, (void*) ups_name);
+        sprintf(key, "ups%d", i);
+        char* ups_name = strdup(ups.c_str());
+        zhash_insert(hash, key, ups_name);
         i++;
-
     }
 
-    conn.close ();
+    conn.close();
     return true;
 }
 
 
-
-
-}// namespace
+} // namespace DBUptime

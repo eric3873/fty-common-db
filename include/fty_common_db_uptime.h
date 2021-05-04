@@ -19,26 +19,11 @@
     =========================================================================
 */
 
-#ifndef FTY_COMMON_DB_UPTIME_H_INCLUDED
-#define FTY_COMMON_DB_UPTIME_H_INCLUDED
+#pragma once
 
 #ifdef __cplusplus
-#include <vector>
-#include <string>
-#include <functional>
-#include <tntdb/connect.h>
-#include <tntdb/result.h>
-#include <tntdb/row.h>
-#include <tntdb/error.h>
-#include <fty_common_asset_types.h>
-#include <fty_common_db_dbpath.h>
-#include <fty_log.h>
-#include "fty_common_db_asset.h"
-
+typedef struct _zhash_t zhash_t;
 namespace DBUptime {
-bool
-get_dc_upses (const char *asset_name, zhash_t *hash);
+bool get_dc_upses(const char* asset_name, zhash_t* hash);
 }
-#endif
-
 #endif

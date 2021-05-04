@@ -1,3 +1,4 @@
 usr/include/*
-usr/lib/*/libfty_common_db.so
+usr/share/*
 usr/lib/*/pkgconfig/libfty_common_db.pc
+usr/lib/*/libfty_common_db.so
