@@ -77,6 +77,10 @@ int select_asset_element_all_with_warranty_end(tntdb::Connection& conn, std::fun
 
 int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std::vector<uint16_t> types,
     std::vector<uint16_t> subtypes, const std::string& without, const std::string& status,
+    const std::string &configured, std::function<void(const tntdb::Row&)> cb);
+
+int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std::vector<uint16_t> types,
+    std::vector<uint16_t> subtypes, const std::string& without, const std::string& status,
     std::function<void(const tntdb::Row&)> cb);
 
 int select_assets_by_container(
@@ -101,6 +105,13 @@ int select_assets_by_filter(
 // returns -1 if error occurs
 int select_assets_without_container(tntdb::Connection& conn, std::vector<uint16_t> types,
     std::vector<uint16_t> subtypes, std::function<void(const tntdb::Row&)> cb);
+
+// select_assets_all_container: selects all assets (with and wihout container)
+// return 0 on success (even if nothing was found)
+// returns -1 if error occurs
+int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> types, std::vector<uint16_t> subtypes,
+    const std::string& without, const std::string& status, const std::string& configured,
+    std::function<void(const tntdb::Row&)> cb);
 
 // select_assets_all_container: selects all assets (with and wihout container)
 // return 0 on success (even if nothing was found)

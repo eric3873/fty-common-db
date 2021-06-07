@@ -370,7 +370,7 @@ int select_asset_element_all_with_warranty_end(tntdb::Connection& conn, std::fun
 
 int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std::vector<uint16_t> types,
     std::vector<uint16_t> subtypes, const std::string& without, const std::string& status,
-    std::function<void(const tntdb::Row&)> cb)
+    const std::string &configured, std::function<void(const tntdb::Row&)> cb)
 {
     LOG_START;
     log_debug("container element_id = %" PRIu32, element_id);
@@ -433,6 +433,28 @@ int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std
             }
         }
 
+        if (!configured.empty()) {
+            if(configured == "no") {
+                end_select += " AND (v.id_parent1 is NULL "
+                        " OR NOT EXISTS "
+                        " (SELECT id_asset_device_dest "
+                        "  FROM t_bios_asset_link_type as l JOIN t_bios_asset_link as a"
+                        "  ON a.id_asset_link_type=l.id_asset_link_type "
+                        "  WHERE "
+                        "     name=\"power chain\" "
+                        "     AND v.id_asset_element=a.id_asset_device_dest))";
+            } else if (configured == "yes") {
+                end_select += " AND (v.id_parent1 is not NULL "
+                        " AND EXISTS "
+                        " (SELECT id_asset_device_dest "
+                        "  FROM t_bios_asset_link_type as l JOIN t_bios_asset_link as a"
+                        "  ON a.id_asset_link_type=l.id_asset_link_type "
+                        "  WHERE "
+                        "     name=\"power chain\" "
+                        "     AND v.id_asset_element=a.id_asset_device_dest))";
+            }
+        }
+
         select += end_select;
 
         // Can return more than one row.
@@ -449,6 +471,13 @@ int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std
         LOG_END_ABNORMAL(e);
         return -1;
     }
+}
+
+int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std::vector<uint16_t> types,
+    std::vector<uint16_t> subtypes, const std::string& without, const std::string& status,
+    std::function<void(const tntdb::Row&)> cb)
+{
+   return select_assets_by_container(conn, element_id, types, subtypes, without, status, "", cb);
 }
 
 // TODO: is this function used anywhere? I can't find it
@@ -665,7 +694,8 @@ int select_assets_without_container(tntdb::Connection& conn, std::vector<uint16_
 }
 
 int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> types, std::vector<uint16_t> subtypes,
-    const std::string& without, const std::string& status, std::function<void(const tntdb::Row&)> cb)
+    const std::string& without, const std::string& status, const std::string& configured,
+    std::function<void(const tntdb::Row&)> cb)
 {
     LOG_START;
 
@@ -679,7 +709,7 @@ int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> t
             " FROM "
             "   t_bios_asset_element as t";
 
-        if (!subtypes.empty() || !types.empty() || status != "" || without != "") {
+        if (!subtypes.empty() || !types.empty() || status != "" || without != "" || !configured.empty()) {
             select += " WHERE ";
         }
         if (!subtypes.empty()) {
@@ -734,6 +764,34 @@ int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> t
             }
         }
 
+        if (!configured.empty()) {
+            if(configured == "no") {
+                if (!subtypes.empty() || !types.empty() || status != "" || without != "") {
+                    select += " AND ";
+                }
+                end_select += " (t.id_parent is NULL "
+                        " OR NOT EXISTS "
+                        " (SELECT id_asset_device_dest "
+                        "  FROM t_bios_asset_link_type as l JOIN t_bios_asset_link as a"
+                        "  ON a.id_asset_link_type=l.id_asset_link_type "
+                        "  WHERE "
+                        "     name=\"power chain\" "
+                        "     AND t.id_asset_element=a.id_asset_device_dest))";
+            } else if (configured == "yes") {
+                if (!subtypes.empty() || !types.empty() || status != "" || without != "") {
+                    select += " AND ";
+                }
+                end_select += " (t.id_parent is not NULL "
+                        " AND EXISTS "
+                        " (SELECT id_asset_device_dest "
+                        "  FROM t_bios_asset_link_type as l JOIN t_bios_asset_link as a"
+                        "  ON a.id_asset_link_type=l.id_asset_link_type "
+                        "  WHERE "
+                        "     name=\"power chain\" "
+                        "     AND t.id_asset_element=a.id_asset_device_dest))";
+            }
+        }
+
         select += end_select;
 
         // Can return more than one row.
@@ -750,6 +808,12 @@ int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> t
         LOG_END_ABNORMAL(e);
         return -1;
     }
+}
+
+int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> types, std::vector<uint16_t> subtypes,
+    const std::string& without, const std::string& status, std::function<void(const tntdb::Row&)> cb)
+{
+    return select_assets_all_container(conn, types, subtypes, without, status, "", cb);
 }
 
 int select_asset_element_by_dc(tntdb::Connection& conn, int64_t dc_id, std::function<void(const tntdb::Row&)> cb)
