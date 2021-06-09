@@ -435,14 +435,17 @@ int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std
 
         // if configured option is defined
         if (!configured.empty()) {
-            std::string sensor_sub_id = std::to_string(persist::asset_subtype::SENSOR);
             std::ostringstream ss;
-            ss << persist::asset_subtype::STS << "," << persist::asset_subtype::UPS << "," << persist::asset_subtype::PDU << ","
-               << persist::asset_subtype::EPDU << "," << persist::asset_subtype::SERVER << "," << persist::asset_subtype::STORAGE << ","
-               << persist::asset_subtype::PATCHPANEL << "," << persist::asset_subtype::SWITCH << "," << persist::asset_subtype::ROUTER << ","
-               << persist::asset_subtype::APPLIANCE << "," << persist::asset_subtype::CHASSIS << "," << persist::asset_subtype::OTHER << ","
-               << persist::asset_subtype::PCU;
-            std::string powerchain_sublist_id = ss.str();
+            std::string sensor_sub_id = std::to_string(persist::asset_subtype::SENSOR);
+            std::string ups_sub_id = std::to_string(persist::asset_subtype::UPS);
+            ss << persist::asset_subtype::PDU << "," << persist::asset_subtype::EPDU;
+            std::string pdu_sublist_id = ss.str();
+            std::string sts_sub_id = std::to_string(persist::asset_subtype::STS);
+            ss.str(""); ss.clear();
+            ss << persist::asset_subtype::SERVER << "," << persist::asset_subtype::STORAGE << "," << persist::asset_subtype::PATCHPANEL << ","
+               << persist::asset_subtype::SWITCH << "," << persist::asset_subtype::ROUTER << "," << persist::asset_subtype::APPLIANCE << ","
+               << persist::asset_subtype::CHASSIS << "," << persist::asset_subtype::OTHER << "," << persist::asset_subtype::PCU;
+            std::string other_powerchain_sublist_id = ss.str();
             ss.str(""); ss.clear();
             ss << persist::asset_type::ROOM << "," << persist::asset_type::ROW << ","
                << persist::asset_type::RACK << "," << persist::asset_type::DEVICE;
@@ -455,17 +458,45 @@ int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std
             // search all device which are not configured
             if (configured == "no") {
                 end_select +=
-                    // if device sensor, parent 1 or parent 2 not configured
+                    // if sensor device, parent 1 or parent 2 not configured
                     " AND ((((v.id_asset_device_type = " + sensor_sub_id + ") "
                     "     AND (v.id_parent1 IS NULL "
                     "     OR v.id_parent2 IS NULL))) "
-                    // else if device with power chain, parent not defined or power chain not defined
-                    " OR (v.id_asset_device_type IN (" + powerchain_sublist_id + ") "
-                    "     AND "
-                    "         (v.id_parent1 IS NULL "
+                    // if ups device, parent 1 or extended attributes or power chain not configured
+                    " OR ((v.id_asset_device_type = " + ups_sub_id + ") "
+                    "     AND ((v.id_parent1 IS NULL) "
+                    "         OR ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "             WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"u_size\") AND v.id_asset_element=x.id_asset_element) != 2 ) "
                     "         OR NOT EXISTS "
-                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type "
-                    "             AS l JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             WHERE name=\"power chain\" AND v.id_asset_element=a.id_asset_device_dest))) "
+                    // if pdu device, parent 1 or extended attributes or power chain not configured
+                    " OR ((v.id_asset_device_type IN (" + pdu_sublist_id + ")) "
+                    "     AND ((v.id_parent1 IS NULL) "
+                    "         OR ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "             WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"outlet_numbering_orientation\") "
+                    "             AND v.id_asset_element=x.id_asset_element) != 2 ) "
+                    "         OR NOT EXISTS "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             WHERE name=\"power chain\" AND v.id_asset_element=a.id_asset_device_dest))) "
+                    // if sts device, parent 1 or extended attributes or power chain not configured
+                    " OR ((v.id_asset_device_type = " + sts_sub_id + ") "
+                    "     AND ((v.id_parent1 IS NULL) "
+                    "         OR ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "             WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"u_size\" OR x.keytag=\"outlet_numbering_orientation\") "
+                    "             AND v.id_asset_element=x.id_asset_element) != 3 ) "
+                    "         OR NOT EXISTS "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             WHERE name=\"power chain\" AND v.id_asset_element=a.id_asset_device_dest))) "
+                    // else if other device with power chain, parent not defined or power chain not defined
+                    " OR (v.id_asset_device_type IN (" + other_powerchain_sublist_id + ") "
+                    "     AND (v.id_parent1 IS NULL "
+                    "         OR NOT EXISTS "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
                     "             WHERE name=\"power chain\" AND v.id_asset_element=a.id_asset_device_dest))) "
                     // else for other device with no power chain, parent not defined
                     " OR (v.id_type IN (" + filter_type_id + ") "
@@ -479,13 +510,42 @@ int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std
                     " AND ((((v.id_asset_device_type = " + sensor_sub_id + ") "
                     "     AND v.id_parent1 IS NOT NULL "
                     "     AND v.id_parent2 IS NOT NULL)) "
-                    // else if device with power chain, parent and power chain must be defined
-                    " OR (v.id_asset_device_type IN (" + powerchain_sublist_id + ") "
+                    // if ups device, parent 1 and extended attributes and power chain must be configured
+                    " OR ((v.id_asset_device_type = " + ups_sub_id + ") "
+                    "     AND (v.id_parent1 IS NOT NULL) "
+                    "     AND ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "         WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"u_size\") AND v.id_asset_element=x.id_asset_element) = 2 ) "
+                    "     AND EXISTS "
+                    "         (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "         JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "         WHERE name=\"power chain\" AND v.id_asset_element=a.id_asset_device_dest)) "
+                    // if pdu device, parent 1 and extended attributes and power chain must be configured
+                    " OR ((v.id_asset_device_type IN (" + pdu_sublist_id + ")) "
+                    "     AND (v.id_parent1 IS NOT NULL) "
+                    "     AND ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "         WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"outlet_numbering_orientation\") "
+                    "         AND v.id_asset_element=x.id_asset_element) = 2 ) "
+                    "     AND EXISTS "
+                    "         (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "         JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "         WHERE name=\"power chain\" AND v.id_asset_element=a.id_asset_device_dest)) "
+                    // if sts device, parent 1 and extended attributes and power chain must be configured
+                    " OR ((v.id_asset_device_type = " + sts_sub_id + ") "
+                    "     AND (v.id_parent1 IS NOT NULL) "
+                    "     AND ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "         WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"u_size\" OR x.keytag=\"outlet_numbering_orientation\") "
+                    "         AND v.id_asset_element=x.id_asset_element) = 3 ) "
+                    "     AND EXISTS "
+                    "         (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "         JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "         WHERE name=\"power chain\" AND v.id_asset_element=a.id_asset_device_dest)) "
+                    // else if other device with power chain, parent and power chain must be defined
+                    " OR (v.id_asset_device_type IN (" + other_powerchain_sublist_id + ") "
                     "     AND "
                     "         (v.id_parent1 IS NOT NULL "
                     "         AND EXISTS "
-                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type "
-                    "             AS l JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
                     "             WHERE name=\"power chain\" AND v.id_asset_element=a.id_asset_device_dest))) "
                     // else for other device with no power chain, parent must be defined
                     " OR (v.id_type IN (" + filter_type_id + ") "
@@ -805,14 +865,17 @@ int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> t
 
         // if configured option is defined
         if (!configured.empty()) {
-            std::string sensor_sub_id = std::to_string(persist::asset_subtype::SENSOR);
             std::ostringstream ss;
-            ss << persist::asset_subtype::STS << "," << persist::asset_subtype::UPS << "," << persist::asset_subtype::PDU << ","
-               << persist::asset_subtype::EPDU << "," << persist::asset_subtype::SERVER << "," << persist::asset_subtype::STORAGE << ","
-               << persist::asset_subtype::PATCHPANEL << "," << persist::asset_subtype::SWITCH << "," << persist::asset_subtype::ROUTER << ","
-               << persist::asset_subtype::APPLIANCE << "," << persist::asset_subtype::CHASSIS << "," << persist::asset_subtype::OTHER << ","
-               << persist::asset_subtype::PCU;
-            std::string powerchain_sublist_id = ss.str();
+            std::string sensor_sub_id = std::to_string(persist::asset_subtype::SENSOR);
+            std::string ups_sub_id = std::to_string(persist::asset_subtype::UPS);
+            ss << persist::asset_subtype::PDU << "," << persist::asset_subtype::EPDU;
+            std::string pdu_sublist_id = ss.str();
+            std::string sts_sub_id = std::to_string(persist::asset_subtype::STS);
+            ss.str(""); ss.clear();
+            ss << persist::asset_subtype::SERVER << "," << persist::asset_subtype::STORAGE << "," << persist::asset_subtype::PATCHPANEL << ","
+               << persist::asset_subtype::SWITCH << "," << persist::asset_subtype::ROUTER << "," << persist::asset_subtype::APPLIANCE << ","
+               << persist::asset_subtype::CHASSIS << "," << persist::asset_subtype::OTHER << "," << persist::asset_subtype::PCU;
+            std::string other_powerchain_sublist_id = ss.str();
             ss.str(""); ss.clear();
             ss << persist::asset_type::ROOM << "," << persist::asset_type::ROW << ","
                << persist::asset_type::RACK << "," << persist::asset_type::DEVICE;
@@ -834,13 +897,42 @@ int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> t
                     "         (SELECT * FROM v_bios_asset_element_super_parent AS v WHERE t.id_asset_element=v.id_asset_element "
                     "         AND v.id_parent1 IS NOT NULL "
                     "         AND v.id_parent2 IS NOT NULL)) "
-                    // else if device with power chain, parent not defined or power chain not defined
-                    " OR (t.id_subtype IN (" + powerchain_sublist_id + ") "
+                    // if ups device, parent 1 or extended attributes or power chain not configured
+                    " OR ((t.id_subtype = " + ups_sub_id + ") "
+                    "     AND ((t.id_parent IS NULL) "
+                    "         OR ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "             WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"u_size\") AND t.id_asset_element=x.id_asset_element) != 2 ) "
+                    "         OR NOT EXISTS "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest))) "
+                    // if pdu device, parent 1 or extended attributes or power chain not configured
+                    " OR ((t.id_subtype IN (" + pdu_sublist_id + ")) "
+                    "     AND ((t.id_parent IS NULL) "
+                    "         OR ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "             WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"outlet_numbering_orientation\") "
+                    "             AND t.id_asset_element=x.id_asset_element) != 2 ) "
+                    "         OR NOT EXISTS "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest))) "
+                    // if sts device, parent 1 or extended attributes or power chain not configured
+                    " OR ((t.id_subtype = " + sts_sub_id + ") "
+                    "     AND ((t.id_parent IS NULL) "
+                    "         OR ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "             WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"u_size\" OR x.keytag=\"outlet_numbering_orientation\") "
+                    "             AND t.id_asset_element=x.id_asset_element) != 3 ) "
+                    "         OR NOT EXISTS "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest))) "
+                    // else if other device with power chain, parent not defined or power chain not defined
+                    " OR (t.id_subtype IN (" + other_powerchain_sublist_id + ") "
                     "     AND "
                     "         (t.id_parent IS NULL "
                     "         OR NOT EXISTS "
-                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type "
-                    "             AS l JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "             JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
                     "             WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest))) "
                     // else for other device with no power chain, parent not defined
                     " OR (t.id_type IN (" + filter_type_id + ") "
@@ -859,14 +951,42 @@ int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> t
                     "         (SELECT * FROM v_bios_asset_element_super_parent AS v WHERE t.id_asset_element=v.id_asset_element "
                     "         AND v.id_parent1 IS NOT NULL "
                     "         AND v.id_parent2 IS NOT NULL)) "
-                    // else if device with power chain, parent and power chain must be defined
-                    " OR (t.id_subtype IN (" + powerchain_sublist_id + ") "
-                    "     AND "
-                    "         (t.id_parent IS NOT NULL "
-                    "         AND EXISTS "
-                    "             (SELECT id_asset_device_dest FROM t_bios_asset_link_type "
-                    "             AS l JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
-                    "             WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest))) "
+                    // if ups device, parent 1 and extended attributes and power chain must be configured
+                    " OR ((t.id_subtype = " + ups_sub_id + ") "
+                    "     AND (t.id_parent IS NOT NULL) "
+                    "     AND ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "         WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"u_size\") AND t.id_asset_element=x.id_asset_element) = 2 ) "
+                    "     AND EXISTS "
+                    "         (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "         JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "         WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest)) "
+                    // if pdu device, parent 1 and extended attributes and power chain must be configured
+                    " OR ((t.id_subtype IN (" + pdu_sublist_id + ")) "
+                    "     AND (t.id_parent IS NOT NULL) "
+                    "     AND ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "         WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"outlet_numbering_orientation\") "
+                    "         AND t.id_asset_element=x.id_asset_element) = 2 ) "
+                    "     AND EXISTS "
+                    "         (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "         JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "         WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest)) "
+                    // if sts device, parent 1 and extended attributes and power chain must be configured
+                    " OR ((t.id_subtype = " + sts_sub_id + ") "
+                    "     AND (t.id_parent IS NOT NULL) "
+                    "     AND ((SELECT COUNT(*) FROM t_bios_asset_ext_attributes AS x "
+                    "         WHERE (x.keytag=\"location_w_pos\" OR x.keytag=\"u_size\" OR x.keytag=\"outlet_numbering_orientation\") "
+                    "         AND t.id_asset_element=x.id_asset_element) = 3 ) "
+                    "     AND EXISTS "
+                    "         (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "         JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "         WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest)) "
+                    // else if other device with power chain, parent and power chain must be defined
+                    " OR (t.id_subtype IN (" + other_powerchain_sublist_id + ") "
+                    "     AND (t.id_parent IS NOT NULL "
+                    "     AND EXISTS "
+                    "         (SELECT id_asset_device_dest FROM t_bios_asset_link_type AS l"
+                    "         JOIN t_bios_asset_link AS a ON a.id_asset_link_type=l.id_asset_link_type "
+                    "         WHERE name=\"power chain\" AND t.id_asset_element=a.id_asset_device_dest))) "
                     // else for other device with no power chain, parent must be defined
                     " OR (t.id_type IN (" + filter_type_id + ") "
                     "     AND t.id_subtype NOT IN (" + filter_subtype_id + ") "
