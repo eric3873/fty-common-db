@@ -552,6 +552,13 @@ int select_assets_by_container(tntdb::Connection& conn, uint32_t element_id, std
                     "     AND v.id_asset_device_type NOT IN (" + filter_subtype_id + ") "
                     "     AND v.id_parent1 IS NOT NULL)) ";
             }
+            // search all device which are configured and no configured
+            else if (configured == "all") {
+                // note: the value "all" deactivate the option
+            }
+            else {
+               log_error("bad value for configured option: %s (no, yes or all)", configured.c_str());
+            }
         }
 
         select += end_select;
@@ -991,6 +998,13 @@ int select_assets_all_container(tntdb::Connection& conn, std::vector<uint16_t> t
                     " OR (t.id_type IN (" + filter_type_id + ") "
                     "     AND t.id_subtype NOT IN (" + filter_subtype_id + ") "
                     "     AND t.id_parent IS NOT NULL)) ";
+            }
+            // search all device which are configured and no configured
+            else if (configured == "all") {
+                // note: the value "all" deactivate the option
+            }
+            else {
+               log_error("bad value for configured option: %s (no, yes or all)", configured.c_str());
             }
         }
 
